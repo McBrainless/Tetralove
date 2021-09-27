@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([TetraLove], [0.1], [jjbrainless@protonmail.com])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Werror foreign])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([configure.h])
 AC_CONFIG_FILES([

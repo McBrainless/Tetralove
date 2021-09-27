@@ -18,25 +18,3 @@ Line(11) = {4, 6};
 Line(12) = {5, 6};
 Line(13) = {5, 3};
 
-//+
-Curve Loop(1) = {11, -5, 3};
-//+
-Plane Surface(1) = {1};
-//+
-Surface(2) = {1};
-//+
-Recursive Delete {
-  Surface{1}; Surface{2}; 
-}
-//+
-Line(14) = {1, 6};
-//+
-Line(15) = {6, 4};
-//+
-Line(16) = {4, 1};
-//+
-Curve Loop(2) = {14, 15, 16};
-//+
-Plane Surface(1) = {2};
-//+
-Compound Surface {1};

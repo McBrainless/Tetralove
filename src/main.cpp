@@ -1,19 +1,31 @@
 #include <iostream>
+#include <cstring>
 #include <fstream>
+#include <string>
+#include "./headers/application.hpp"
 
 using namespace std;
 
-int main() {
-	fstream my_file;
-	my_file.open("./data/unit-tetra.geo", ios::in);
-	if(!my_file) {
-		cout << "File not found!\n";
-	} else {
-		char c;
-		while (my_file.get(c)) {
-			cout << c;
+/***
+ *
+ *	strrem - clear string of character
+ *
+ ***/
+void strrem(char* cstring, const char delim) {
+	uint16_t size = strlen(cstring), loc = 0;
+	for (uint16_t x = 0; x<size; x++) {
+		if (cstring[x] != delim) {
+			cstring[loc] = (loc != x) ? cstring[x] : cstring[loc];
+			loc++;
 		}
-		my_file.close();
 	}
+	cstring[loc] = '\0';
+}
+
+
+int main() {
+	application app;
+	string filename = "./data/unit-tetra.msh";
+	app.load_msh(&filename);
 	return 0;
 }
