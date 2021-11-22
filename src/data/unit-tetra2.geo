@@ -18,4 +18,8 @@ Surface(3) = {3};
 Surface(4) = {4};
 Surface Loop(1) = {2, 1, 3, 4};
 Volume(1) = {1};
-
+Physical Volume("internal") = {1};
+Physical Surface("face1") = {1};
+Physical Surface("face2") = {2};
+Physical Surface("face3") = {3};
+Physical Surface("face4") = {4};
