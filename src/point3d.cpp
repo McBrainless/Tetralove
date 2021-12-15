@@ -1,6 +1,5 @@
 #include "./headers/point3d.hpp"
 
-
 int point3d::count = 0;
 
 point3d::point3d(int id, double x, double y, double z) {
@@ -25,3 +24,8 @@ point3d point3d::operator= (const point3d& point) {
 	tmp.z = point.z;
 	return tmp;
 }
+
+void point3d::add_PTag(int tag) {
+	this->tags.push_back(tag);
+}
+
