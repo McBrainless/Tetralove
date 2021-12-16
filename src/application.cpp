@@ -26,228 +26,161 @@ application::~application(void) {
 	while (this->volumes.size() > 0) {
 		volumes.pop_back();
 	}
+
+	if (this->mshfile.is_open()) {
+		this->mshfile.close();
+	}
+}
+
+int application::load_Entities(void) {
+	bool readLine = true;
+	int error_code = None;
+	int lineNumber = 0, points = 0, curves = 0, surfaces = 0, volumes = 0;
+	string* lString = NULL;
+	string* token = NULL;
+
+	if (this->mshfile.is_open()) {
+		while (readLine) {
+
+			lString = this->readLine();
+			readLine = !this->mshfile.eof();
+
+			lineNumber++;
+			if (strstr(lString->c_str(), "$EndEntities")) {
+				cout << "Loaded: Entities.\n";
+				readLine = false;
+			} else if (lineNumber == 1) {
+				cout << *lString << "\n";
+				points = stoi( *strtoken(lString, " ") );
+				curves = stoi( *strtoken(NULL, " ") );
+				surfaces = stoi( *strtoken(NULL, " ") );
+				volumes = stoi( *strtoken(NULL, " ") );
+				
+				cout << "\tPoints: " << points << "\n";
+				cout << "\tCurves: " << curves << "\n";
+				cout << "\tSurfaces: " << surfaces << "\n";
+				cout << "\tVolumes: " << volumes << "\n";
+			}
+			delete lString;
+
+		}
+	} else {
+		error_code = File_Open_Already;
+		cout << "Error: File already open. (code " << error_code << ")\n";
+	}
+	return error_code;
+}
+
+
+void application::load_NodeBlock(int size) {
+	point3d* lPoint[size];
+	int id = 0;
+	double x = 0.0, y = 0.0, z = 0.0;
+
+	streamsize n = 255;
+	char fLine[n];
+
+	for (int lLine = 0; lLine < size; lLine++) {
+		mshfile.getline(fLine, n);
+		id = stod(fLine);
+
+		lPoint[lLine] = new point3d(id);
+		this->points.push_back(lPoint[lLine]);
+	}
+
+	for (int lLine = 0; lLine < size; ++lLine) {
+		mshfile.getline(fLine, n);
+	}
+}
+
+
+string* application::readLine(void) {
+	streamsize n = 255;
+	char fLine[n];
+	this->mshfile.getline(fLine, n);
+	string* lString = new string(fLine);
+	return lString;
+}
+
+int application::load_Nodes(void) {
+	bool readLine = true;
+	int error_code = None;
+	string* lString = NULL;
+	curve3d* lcurve = NULL;
+	surface3d* lsurface = NULL;
+	volume* lvolume = NULL;
+
+	if (this->mshfile.is_open()) {
+		while (readLine) {
+			lString = this->readLine();
+			readLine = !this->mshfile.eof();
+			
+			if (strstr(lString->c_str(), "$EndNodes")) {
+				cout << "Loaded: Nodes.\n";
+				readLine = false;
+			} else {
+
+			}
+			delete lString;
+		}
+	}
+	return error_code;
 }
 
 void application::load_msh(string* filename) {
-	fstream mshfile;
-	mshfile.open(filename->c_str(), ios::in);
-	if(!mshfile) {
+	this->mshfile.open(filename->c_str(), ios::in);
+	if(!this->mshfile.is_open()) {
 		cout << "File not found!\n";
 	} else {
+		string* lString = NULL;
+		bool readLine = true;
 		streamsize n = 255;
 		char fLine[n];
 		char* token;
-		int lineNumber = 0, points = 0, curves = 0, surfaces = 0, volumes = 0;
-		int points_ct = 0, curves_ct = 0, surfaces_ct = 0, volumes_ct = 0;
-		int id = 0, tags = 0, boundingIDs = 0, p1 = 0, p2 = 0;
-		double x = 0.0, y = 0.0, z = 0.0, xm = 0.0, ym=0.0, zm=0.0;
-		point3d* lpoint = NULL;
-		curve3d* lcurve = NULL;
-		surface3d* lsurface = NULL;
-		volume* lvolume = NULL;
 
 		cout << "Loading file: " << filename->c_str() << "\n";
 		
-		while (!mshfile.eof()) {
-			mshfile.getline(fLine, n);
-
+		while (readLine) {
 			switch (this->state) {
 				case initial:
+					this->mshfile.getline(fLine, n);
+					readLine = !this->mshfile.eof();
+
 					if (strstr(fLine, "$MeshFormat")) {
 						this->state = MeshFormat;
 						cout << "Loading: MeshFormat.\n";
 					} else if (strstr(fLine, "$Entities")) {
 						this->state = Entities;
 						cout << "Loading: Entities.\n";
+					} else if (strstr(fLine, "$Nodes")) {
+						this->state = Nodes;
+						cout << "Loading: Nodes.\n";
+					} else {
+						cout << "Error: Unknown state.\n" << fLine << "\n";
+						readLine = false;
 					}
  					break;
 				case MeshFormat:
-					if (strstr(fLine, "$EndMeshFormat")) {
-						this->state = initial;
-						cout << "Loaded: MeshFormat.\n";
-					} else {
-						cout << fLine << "\n";
-					}
+					cout << *this->readLine() << "\n";
+					lString = this->readLine();
+					delete lString;
+					cout << "Loaded: MeshFormat.\n";
+					this->state = initial;
 					break;
 				case Entities:
-					if (strstr(fLine, "$EndEntities")) {
-						this->state = initial;
-						cout << "Loaded: Entities.\n";
-					} else {
-						lineNumber++;
-						if (lineNumber == 1) {
-//							cout << fLine << "\n";
-							points = atoi(strtok(fLine, " "));
-							curves = atoi(strtok(NULL, " "));
-							surfaces = atoi(strtok(NULL, " "));
-							volumes = atoi(strtok(NULL, " "));
-							points_ct = points;
-							curves_ct = curves;
-							surfaces_ct = surfaces;
-							volumes_ct = volumes;
-						} else {
-//							cout << fLine << "\n";
-							if (points_ct > 0) {
-								id = atoi(strtok(fLine, " "));
-
-								//get location
-								x = std::stod(strtok(NULL, " "));
-								y = std::stod(strtok(NULL, " "));
-								z = std::stod(strtok(NULL, " "));
-
-								//builds point
-								lpoint = new point3d(id, x, y, z);
-								this->points.push_back(lpoint);
-
-								//ignores physical tags
-								tags = std::stod(strtok(NULL, " "));
-								for(; tags > 0; tags--) {
-									lpoint->add_PTag( std::stod(strtok(NULL, " ")) );
-								}
-
-								points_ct--;
-
-								//report data loaded
-								if (points_ct == 0) {
-									points = this->points.size();
-									cout << "Points: " << points << "\n";
-									for (int x = 1; x <= points; x++) {
-										lpoint = this->get_point(x);
-										cout << "ID: " << lpoint->get_id();
-										cout << "\tX: " << lpoint->get_x();
-										cout << "\tY: " << lpoint->get_y();
-										cout << "\tZ: " << lpoint->get_z() << "\n";
-									}
-								}
-							} else if (curves_ct > 0) {
-								id = atoi(strtok(fLine, " "));
-
-								//get mins
-								x = std::stod(strtok(NULL, " "));
-								y = std::stod(strtok(NULL, " "));
-								z = std::stod(strtok(NULL, " "));
-
-								//get maxs
-								xm = std::stod(strtok(NULL, " "));
-								ym = std::stod(strtok(NULL, " "));
-								zm = std::stod(strtok(NULL, " "));
-
-								//builds curve
-								lcurve = new curve3d(id, this->points[p1], this->points[p2]);
-								this->curves.push_back(lcurve);
-
-								//ignores physical tags
-								tags = std::stod(strtok(NULL, " "));
-								for(; tags > 0; tags--) {
-									lcurve->add_PTag( std::stod(strtok(NULL, " ")) );
-								}
-
-								//ignores bounding points
-								boundingIDs = std::stod(strtok(NULL, " "));
-								for(; boundingIDs > 0; boundingIDs--) {
-									lcurve->add_Bounding( std::stod(strtok(NULL, " ")) );
-								}
-
-								//report data loaded
-								curves_ct--;
-								if (curves_ct == 0) {
-									curves = this->curves.size();
-									cout << "Curves: " << curves << "\n";
-									for (int x = 1; x <= curves; x++) {
-										lcurve = this->get_curve(x);
-										cout << "ID: " << lcurve->get_id() << "\n";
-									}
-								}
-							} else if (surfaces_ct > 0) {
-								id = atoi(strtok(fLine, " "));
-
-								//get mins
-								x = std::stod(strtok(NULL, " "));
-								y = std::stod(strtok(NULL, " "));
-								z = std::stod(strtok(NULL, " "));
-
-								//get maxs
-								xm = std::stod(strtok(NULL, " "));
-								ym = std::stod(strtok(NULL, " "));
-								zm = std::stod(strtok(NULL, " "));
-
-								//get physical tags
-								for (int w = atoi(strtok(NULL, " ")); w>0; w--);
-
-								//get point references
-								p1 = atoi(strtok(NULL, " "));
-								p2 = abs(atoi(strtok(NULL, " ")));
-
-								//builds curve
-								lsurface = new surface3d();
-								this->surfaces.push_back(lsurface);
-
-								surfaces_ct--;
-
-								if (surfaces_ct == 0) {
-									surfaces = this->surfaces.size();
-									cout << "Surfaces: " << surfaces << "\n";
-									for (int x = 1; x <= surfaces; x++) {
-										lsurface = this->get_surface(x);
-										cout << "ID: " << lsurface->get_id() << "\n";
-									}
-								}
-							} else if (volumes_ct > 0) {
-								id = atoi(strtok(fLine, " "));
-
-								//get mins
-								x = std::stod(strtok(NULL, " "));
-								y = std::stod(strtok(NULL, " "));
-								z = std::stod(strtok(NULL, " "));
-
-								//get maxs
-								xm = std::stod(strtok(NULL, " "));
-								ym = std::stod(strtok(NULL, " "));
-								zm = std::stod(strtok(NULL, " "));
-
-								//get physical tags
-								for (int w = atoi(strtok(NULL, " ")); w>0; w--);
-
-								//get point references
-								p1 = atoi(strtok(NULL, " "));
-								p2 = abs(atoi(strtok(NULL, " ")));
-
-								//builds curve
-								lvolume = new volume(id, this->points[p1], this->points[p2]);
-								this->volumes.push_back(lvolume);
-
-								volumes_ct--;
-
-								if (volumes_ct == 0) {
-									volumes = this->volumes.size();
-									cout << "Volumes: " << volumes << "\n";
-									for (int x = 1; x <= volumes; x++) {
-										lvolume = this->get_volume(x);
-										cout << "ID: " << lvolume->get_id() << "\n";
-									}
-								}
-							} else {
-								cout << "Oh snap! There's more.\n";
-							}
-						}
-					}
+					this->load_Entities();
+					this->state = initial;
 					break;
-				default:
-			
-				cout << fLine << "\n";
-/*
-				token = strtok(fLine, "\n");
-				while (token) {
-					lineNum++;
-					cout << lineNum << ") " << token << "\n";
-					token = strtok(NULL, "\n");
-				}
-*/
+				case Nodes:
+//					this->load_Nodes();
+					this->state = initial;
+					break;
+				default:			
+					cout << "Unknown state: " << fLine << "\n";
 			}
 		}
 		mshfile.close();
 	}
-
 }
 
 point3d* application::get_point(int id) {
@@ -278,5 +211,22 @@ volume* application::get_volume(int id) {
 	return NULL;
 }
 
+string* strtoken(string* str, const char* delim) {
+	static string s = *str;
+	static int x = 0, size = 0;
+	string* outstr = new string("");
 
+	if (str != NULL) {
+		size = s.size();
+	}
+
+	if (x < size) {
+		for(; ((s[x] != *delim) & (x < size)); x++) {
+			*outstr += s[x];
+		}
+		x++;
+	} else *outstr = s[size - 1];	
+
+	return outstr;
+}
 
