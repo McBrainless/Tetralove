@@ -2,6 +2,7 @@
 #include <string>
 #include "./headers/application.hpp"
 
+
 application::application(void) {
 	this->state = initial;
 }
@@ -73,31 +74,29 @@ int application::load_Entities(void) {
 
 
 void application::load_NodeBlock(int size) {
-	point3d* lPoint[size];
+	point3d* lPoint = NULL;
 	int id = 0;
 	double x = 0.0, y = 0.0, z = 0.0;
 
-	streamsize n = 255;
-	char fLine[n];
+	char fLine[STREAM_SIZE];
 
 	for (int lLine = 0; lLine < size; lLine++) {
-		mshfile.getline(fLine, n);
-		id = stod(fLine);
+		mshfile.getline(fLine, STREAM_SIZE);
+		id = std::stod(fLine);
 
-		lPoint[lLine] = new point3d(id);
-		this->points.push_back(lPoint[lLine]);
+		lPoint = new point3d(id);
+		this->points.push_back(lPoint);
 	}
 
 	for (int lLine = 0; lLine < size; ++lLine) {
-		mshfile.getline(fLine, n);
+		mshfile.getline(fLine, STREAM_SIZE);
 	}
 }
 
 
 string* application::readLine(void) {
-	streamsize n = 255;
-	char fLine[n];
-	this->mshfile.getline(fLine, n);
+	char fLine[STREAM_SIZE];
+	this->mshfile.getline(fLine, STREAM_SIZE);
 	string* lString = new string(fLine);
 	return lString;
 }
@@ -127,23 +126,24 @@ int application::load_Nodes(void) {
 	return error_code;
 }
 
-void application::load_msh(string* filename) {
+int application::load_msh(string* filename) {
+	int error = 0;
 	this->mshfile.open(filename->c_str(), ios::in);
 	if(!this->mshfile.is_open()) {
 		cout << "File not found!\n";
+		error = 1;
 	} else {
 		string* lString = NULL;
 		bool readLine = true;
-		streamsize n = 255;
-		char fLine[n];
-		char* token;
-
+		char fLine[STREAM_SIZE];
+		char* token = NULL;
+		
 		cout << "Loading file: " << filename->c_str() << "\n";
 		
 		while (readLine) {
 			switch (this->state) {
 				case initial:
-					this->mshfile.getline(fLine, n);
+					this->mshfile.getline(fLine, STREAM_SIZE);
 					readLine = !this->mshfile.eof();
 
 					if (strstr(fLine, "$MeshFormat")) {
@@ -156,7 +156,7 @@ void application::load_msh(string* filename) {
 						this->state = Nodes;
 						cout << "Loading: Nodes.\n";
 					} else {
-						cout << "Error: Unknown state.\n" << fLine << "\n";
+						cout << "Error: Unknown root state: \n" << fLine << "\n";
 						readLine = false;
 					}
  					break;
@@ -172,15 +172,16 @@ void application::load_msh(string* filename) {
 					this->state = initial;
 					break;
 				case Nodes:
-//					this->load_Nodes();
+					this->load_Nodes();
 					this->state = initial;
 					break;
 				default:			
-					cout << "Unknown state: " << fLine << "\n";
+					cout << "Unknown branch state: " << fLine << "\n";
 			}
 		}
 		mshfile.close();
 	}
+	return error;
 }
 
 point3d* application::get_point(int id) {
@@ -221,7 +222,7 @@ string* strtoken(string* str, const char* delim) {
 	}
 
 	if (x < size) {
-		for(; ((s[x] != *delim) & (x < size)); x++) {
+		for(; ((s[x] != *delim) && (x < size)); x++) {
 			*outstr += s[x];
 		}
 		x++;

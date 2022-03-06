@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#define STREAM_SIZE 255
+
 enum error_codes {
 	None,
 	File_Open_Already
@@ -50,7 +52,7 @@ class application {
 	public:
 		application();
 		~application();
-		void load_msh(string*);
+		int load_msh(string*);
 		point3d* get_point(int);
 		curve3d* get_curve(int);
 		surface3d* get_surface(int);

@@ -22,10 +22,17 @@ void strrem(char* cstring, const char delim) {
 	cstring[loc] = '\0';
 }
 
-
 int main() {
 	application app;
+#ifdef LINUX
 	string filename = "./data/unit-tetra.msh";
+#elif _WINDOWS
+	string filename = "data/unit-tetra.msh";
+#else
+	string filename = "\n";
+#endif // OS
+
+	cout << "Opening file: " << filename << "\n";
 	app.load_msh(&filename);
 	return 0;
 }
